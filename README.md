@@ -1,2 +1,5 @@
 # sails-hook-floatperms
-Extends sails with a modular permissions system for guarding controller actions in a cleaner way than policies. Uses the `floatperms` module as a singleton permissions store and general helper library.
+
+This hook enforces usage of the [floatperms](/fpm-git/floatperms) module for all Sails actions, providing automagic action patching meant to validate requests against some defined criteria. Where validation criteria are not specified for any given route, that route will always yield in a **403 Forbidden** response being sent to the user, as a strict safety measure.
+
+Reading the [floatperms readme](/fpm-git/floatperms) can be quite helpful and is suggested.
