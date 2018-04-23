@@ -1,0 +1,19 @@
+{
+  "name": "sails-hook-floatperms",
+  "version": "0.0.1",
+  "description": "Extends sails with a modular permissions system for guarding controller actions in a cleaner way than policies. Uses the `floatperms` module as a singleton permissions store and general helper library.",
+  "license": "",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --reporter spec"
+  },
+  "author": "Floatplane Media Inc.",
+  "sails": {
+    "isHook": true,
+    "hookName": "floatperms"
+  },
+  "dependencies": {
+    "floatperms": "git+ssh://git@github.com/fpm-git/floatperms.git#v0.0.1"
+  }
+}
