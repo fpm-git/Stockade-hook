@@ -176,13 +176,13 @@ class SailsHookFloatperms {
                 try {
                     return (action.constructor.name !== 'AsyncFunction') ? action(req, res) : action(req, res).catch(e => {
                         if (!res.headersSent) {
-                            res.serverError();
+                            res.serverError(e);
                         }
                         return this.sails.log.error('[sails-hook-floatperms]', `Error executing action "${fullActionPath}":`, e);
                     });
                 } catch (e) {
                     if (!res.headersSent) {
-                        res.serverError();
+                        res.serverError(e);
                     }
                     return this.sails.log.error('[sails-hook-floatperms]', `Error executing action "${fullActionPath}":`, e);
                 }
@@ -191,7 +191,7 @@ class SailsHookFloatperms {
             });
         } catch (err) {
             this.sails.log.error('[sails-hook-floatperms]', 'Error occurred during request validation:', err);
-            return res.serverError();
+            return res.serverError(err);
         }
     }
 
