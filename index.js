@@ -71,11 +71,11 @@ class SailsHookFloatperms {
     _executeActionWrapped(req, res, action) {
         const RESPONSES = {
             malformedAction: {
-                code: 'malformedAction',
+                name: 'malformedAction',
                 message: 'Malformed action received!',
             },
             badConfig: {
-                code: 'badConfig',
+                name: 'badConfig',
                 message: 'Invalid configuration has caused the request to be unhandleable.',
             },
         };
