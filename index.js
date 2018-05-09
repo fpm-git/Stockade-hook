@@ -80,16 +80,27 @@ class SailsHookFloatperms {
             },
         };
 
+        // If we have the floatplane-hook-error service defined global, we'll convert all the RESPONSES above into FloatplaneErrors.
+        // [Normally we wouldn't do this, as having them be plain objects is totally great, they'd be automatically logged and all.]
+        // [The exception is being made here simply for clarity purposes, since none of these errors expose anything truly private.]
+        // [If this changes and private data is for some reason included in output errors, make sure to remove this conversion.]
+        const hasErrorService = ((global.ErrorService instanceof Object) && (global.ErrorService.createError instanceof Function));
+        if (hasErrorService) {
+            for (const k in RESPONSES) {
+                RESPONSES[k] = ErrorService.createError(RESPONSES[k].name, RESPONSES[k].message);
+            }
+        }
+
         // if we're missing the middlewareType field or it's not formatted properly, then there's something goofed up about this request, reject..
         if ((typeof action._middlewareType !== 'string') || (!action._middlewareType.startsWith('ACTION:'))) {
             this.sails.log.warn('[sails-hook-floatperms]', 'Received funky non-action request:', req);
-            return res.serverError({ errors: [RESPONSES.malformedAction] });
+            return res.serverError(RESPONSES.malformedAction);
         }
 
         // ensure we presently have the controller config loaded, otherwise reject..
         if (!this.sails || !this.sails.config || !this.sails.config.blueprints || !this.sails.config.blueprints._controllers) {
             this.sails.log.error('[sails-hook-floatperms]', 'Failed to locate the `_controllers` field in blueprints config! Ensure you are running Sails v1!');
-            return res.serverError({ errors: [RESPONSES.badConfig] });
+            return res.serverError(RESPONSES.badConfig);
         }
 
         // grab the complete action path
@@ -110,8 +121,8 @@ class SailsHookFloatperms {
 
         // handle a particular weird case... (this really shouldn't happen unless marlin or sails change/break in some way, but it's better to be safe than sorry...)
         if ((!controller && !marlinController) || (typeof controller !== 'object' && typeof marlinController !== 'object')) {
-            this.sails.log.error('[sails-hook-floatperms]', `Unable to locate controller information for "${fullActionPath}". No such entry exists in the natural or marlin configs.`);
-            return res.serverError({ errors: [RESPONSES.badConfig] });
+            this.sails.log.error('[sails-hook-floatperms]', `Unable to locate controller information for "${fullActionPath}". No such entry exists in the natural or marlin configs. Make sure you've defined a \`_config\` in the target controller!`);
+            return res.serverError(RESPONSES.badConfig);
         }
 
         const marlinConfig = (marlinController && (typeof marlinController === 'object')) ? marlinController._config : {};
@@ -121,11 +132,11 @@ class SailsHookFloatperms {
         // ensure our `permissions` types are proper objects if they have some truthy value (i.e. they'll not be replaced by an object already)
         if (marlinPerms && (typeof marlinPerms !== 'object')) {
             this.sails.log.error('[sails-hook-floatperms]', `The marlin-configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof marlinPerms}) ${marlinPerms}`);
-            return res.serverError({ errors: [RESPONSES.badConfig] });
+            return res.serverError(RESPONSES.badConfig);
         }
         if (naturalPerms && (typeof naturalPerms !== 'object')) {
             this.sails.log.error('[sails-hook-floatperms]', `The configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof naturalPerms}) ${naturalPerms}`);
-            return res.serverError({ errors: [RESPONSES.badConfig] });
+            return res.serverError(RESPONSES.badConfig);
         }
 
         // merge all permissions... (on a per-action level)
@@ -136,7 +147,7 @@ class SailsHookFloatperms {
 
         if (!matcher) {
             this.sails.log.warn('[sails-hook-floatperms]', `Found no entry for "${actionCaseName}" in the \`permissions\` block of the "${controllerIdent}" controller. The request has been forbidden by default.`);
-            return res.forbidden({ errors: [RESPONSES.badConfig] });
+            return res.forbidden(RESPONSES.badConfig);
         }
 
         // collects the fail explanations from the given validation results array, returning a format suitable for res.forbidden
