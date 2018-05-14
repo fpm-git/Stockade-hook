@@ -167,7 +167,7 @@ class SailsHookFloatperms {
                 }
             });
             return global.ErrorService
-                ? (errors.length === 1 ? errors[0] : global.ErrorService.createError(undefined, undefined, errors))
+                ? (errors.length === 1 ? errors[0] : global.ErrorService.groupErrors(undefined, undefined, errors))
                 : { errors: errors };
         };
 
