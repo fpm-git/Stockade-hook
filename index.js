@@ -188,6 +188,10 @@ class SailsHookFloatperms {
                         if (!res.headersSent) {
                             res.serverError(e);
                         }
+                        // If we've floatplane-hook-error installed, don't bother logging here, as it should handle logging (no double-logging please!).
+                        if (global.ErrorService) {
+                            return;
+                        }
                         return this.sails.log.error('[sails-hook-floatperms]', `Error executing action "${fullActionPath}":`, e);
                     });
                 } catch (e) {
