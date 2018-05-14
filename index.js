@@ -87,7 +87,7 @@ class SailsHookFloatperms {
         const hasErrorService = ((global.ErrorService instanceof Object) && (global.ErrorService.createError instanceof Function));
         if (hasErrorService) {
             for (const k in RESPONSES) {
-                RESPONSES[k] = ErrorService.createError(RESPONSES[k].name, RESPONSES[k].message);
+                RESPONSES[k] = global.ErrorService.createError(RESPONSES[k].name, RESPONSES[k].message);
             }
         }
 
@@ -150,15 +150,25 @@ class SailsHookFloatperms {
             return res.forbidden(RESPONSES.badConfig);
         }
 
-        // collects the fail explanations from the given validation results array, returning a format suitable for res.forbidden
-        // (in the future, may want to filter this based on conformance to { code: string, message: string })
+        // Collects the fail explanations from the given validation results array, returning a format suitable for res.forbidden.
+        // If floatplane-hook-error is loaded, then all returned errors will be wrapped as FloatplaneErrors and grouped if there are more than one.
         const collectFails = (failedValidations) => {
             if (!Array.isArray(failedValidations)) {
-                return [];
+                return global.ErrorService ? [] : { errors: [] };
             }
-            return failedValidations.map(v => {
-                return v.explanation;
-            }).filter(v => v);
+            const errors = failedValidations.filter(v => v.explanation).map(v => {
+                if (global.ErrorService) {
+                    if (global.ErrorService.isError(v.explanation)) {
+                        return v.explanation;
+                    }
+                    return global.ErrorService.createError('unknownError', undefined, undefined, v.explanation);
+                } else {
+                    return v.explanation;
+                }
+            });
+            return global.ErrorService
+                ? (errors.length === 1 ? errors[0] : global.ErrorService.createError(undefined, undefined, errors))
+                : { errors: errors };
         };
 
         try {
@@ -171,7 +181,7 @@ class SailsHookFloatperms {
                             this.sails.log.error('[sails-hook-floatperms]', `#${i + 1})`, e);
                         });
                     }
-                    return res.forbidden({ errors: collectFails(validationRes.failedValidations) });
+                    return res.forbidden(collectFails(validationRes.failedValidations));
                 }
                 try {
                     return (action.constructor.name !== 'AsyncFunction') ? action(req, res) : action(req, res).catch(e => {
