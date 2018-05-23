@@ -8,8 +8,26 @@ class SailsHookFloatperms {
         this._bindEventHandlers();
     }
 
-    configure() {
-
+    defaults() {
+        return {
+            floatperms: {
+                /**
+                 * How returned errors should be wrapped, if at all. Possible options:
+                 *
+                 * - false (boolean): Prevents errors from being wrapped at all. They will be
+                 * returned just as they are from the validator.
+                 * - 'all' (string): Wraps all errors returned from the validator.
+                 * - 'first' (string): Wraps just the first error returned from the validator.
+                 * If the floatplane-hook-errors is installed, then any FloatplaneError objects
+                 * will take precedence.
+                 * - 'notLoggedIn' (string): Special mode which will act differently depending
+                 * on the errors returned from the validator. If a FloatplaneError is returned
+                 * of type 'notLoggedInError', then it will be the only error wrapped. If there
+                 * is no such error returned, then this mode behaves like 'all'.
+                 */
+                wrapErrors: 'all',
+            }
+        };
     }
 
     initialize(done) {
@@ -150,27 +168,6 @@ class SailsHookFloatperms {
             return res.forbidden(RESPONSES.badConfig);
         }
 
-        // Collects the fail explanations from the given validation results array, returning a format suitable for res.forbidden.
-        // If floatplane-hook-error is loaded, then all returned errors will be wrapped as FloatplaneErrors and grouped if there are more than one.
-        const collectFails = (failedValidations) => {
-            if (!Array.isArray(failedValidations)) {
-                return global.ErrorService ? [] : { errors: [] };
-            }
-            const errors = failedValidations.filter(v => v.explanation).map(v => {
-                if (global.ErrorService) {
-                    if (global.ErrorService.isError(v.explanation)) {
-                        return v.explanation;
-                    }
-                    return global.ErrorService.createError('unknownError', undefined, undefined, v.explanation);
-                } else {
-                    return v.explanation;
-                }
-            });
-            return global.ErrorService
-                ? (errors.length === 1 ? errors[0] : global.ErrorService.groupErrors(undefined, undefined, errors))
-                : { errors: errors };
-        };
-
         try {
             Permissions.validate(req, matcher).then(validationRes => {
                 if (!validationRes.hasPassed) {
@@ -181,7 +178,7 @@ class SailsHookFloatperms {
                             this.sails.log.error('[sails-hook-floatperms]', `#${i + 1})`, e);
                         });
                     }
-                    return res.forbidden(collectFails(validationRes.failedValidations));
+                    return res.forbidden(this._collectFails(validationRes.failedValidations));
                 }
                 try {
                     return (action.constructor.name !== 'AsyncFunction') ? action(req, res) : action(req, res).catch(e => {
@@ -207,6 +204,83 @@ class SailsHookFloatperms {
             this.sails.log.error('[sails-hook-floatperms]', 'Error occurred during request validation:', err);
             return res.serverError(err);
         }
+    }
+
+    /**
+     * A helper function used in processing the results of any failed validations, returning
+     * a value acceptable for passing to res.forbidden.
+     *
+     * If the floatplane-hook-error is loaded, then all errors which aren't already FloatplaneError
+     * objects will be wrapped up as such, and grouped if there are more than one.
+     *
+     * @param {Object[]} failedValidations - A list of failed validations as received from
+     * Floatperms.
+     */
+    _collectFails(failedValidations) {
+        if (!Array.isArray(failedValidations)) {
+            return global.ErrorService ? [] : { errors: [] };
+        }
+
+        // All the different types of error wrappers supported, used as per the `wrapErrors` option.
+        const errorWrappers = {
+            all(errors) {
+                // If we've no ErrorService with an isError function, simply return the explanations as they are.
+                if (!(global.ErrorService instanceof Object) || !(global.ErrorService.isError instanceof Function)) {
+                    return errors;
+                }
+                // Ensure all errors are wrapped as FloatplaneError objects and return.
+                return errors.map(e => {
+                    if (global.ErrorService.isError(e)) {
+                        return e;
+                    }
+                    return global.ErrorService.createError('unknownError', undefined, undefined, e);
+                });
+            },
+            first(errors) {
+                // If we've an ErrorService with an isError function, try finding a FloatplaneError to take precedence as first.
+                if ((global.ErrorService instanceof Object) && (global.ErrorService.isError instanceof Function)) {
+                    const fpError = errors.find(e => global.ErrorService.isError(e));
+                    if (fpError) {
+                        return [fpError];
+                    }
+                }
+                // Simply handle wrapping the first error as necessary.
+                return this.all(errors.slice(0, 1));
+            },
+            notLoggedIn(errors) {
+                // If we've no ErrorService with an isError function, then return the explanations as-is.
+                if (!(global.ErrorService instanceof Object) || !(global.ErrorService.isError instanceof Function)) {
+                    return errors;
+                }
+                // Try and find our not-logged in error.
+                const notLoggedInError = errors.find(e => global.ErrorService.isError(e) && (e.name === 'notLoggedInError'));
+                if (notLoggedInError instanceof Object) {
+                    return [notLoggedInError];
+                }
+                // Otherwise simply use the all error wrapper.
+                return this.all(errors);
+            },
+        };
+
+        // Pull out our Floatperms configuration object.
+        const floatpermsConfig = this.sails.config && this.sails.config.floatperms;
+        // Extract just our explanations, as that's all we're really interested in wrapping.
+        const explanations = failedValidations.filter(v => v.explanation).map(v => v.explanation);
+        // Find our wrap function to use, if any.
+        const wrap = errorWrappers[floatpermsConfig.wrapErrors];
+        // Wrap all explanations, or if there is no wrapper, simply use them as-is.
+        const errors = wrap ? wrap(explanations) : explanations;
+
+        // If we've the floatplane-hook-error installed, we should group or return directly any wrapped error.
+        if (wrap && (global.ErrorService instanceof Object) && (global.ErrorService.groupErrors instanceof Function)) {
+            // Catch the case where there somehow are no errors (wot o.o?)
+            if (errors.length === 0) {
+                return [];
+            }
+            // If we've one error, return it directly, otherwise return an error group.
+            return (errors.length === 1) ? errors[0] : global.ErrorService.groupErrors(undefined, undefined, errors);
+        }
+        return { errors };
     }
 
 }
