@@ -1,6 +1,6 @@
 {
   "name": "sails-hook-floatperms",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Extends sails with a modular permissions system for guarding controller actions in a cleaner way than policies. Uses the `floatperms` module as a singleton permissions store and general helper library.",
   "license": "",
   "private": true,
