@@ -293,3 +293,4 @@ function declassify(inst) {
 }
 
 module.exports = (sails) => declassify(new SailsHookFloatperms(sails));
+module.exports.Permissions = Permissions;
