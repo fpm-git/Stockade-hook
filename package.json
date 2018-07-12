@@ -18,6 +18,6 @@
     "hookName": "stockade-hook"
   },
   "dependencies": {
-    "floatperms": "git+ssh://git@github.com/fpm-git/floatperms.git#v0.0.2"
+    "stockade": "^1.0.0"
   }
 }
