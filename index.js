@@ -1,8 +1,8 @@
-const Permissions = require('floatperms');
+const Permissions = require('stockade');
 const fs = require('fs');
 const path = require('path');
 
-class SailsHookFloatperms {
+class SailsHookStockade {
   constructor(sails) {
     this.sails = sails;
     this._bindEventHandlers();
@@ -10,7 +10,7 @@ class SailsHookFloatperms {
 
   defaults() {
     return {
-      floatperms: {
+      stockade: {
         /**
  * How returned errors should be wrapped, if at all. Possible options:
  *
@@ -31,7 +31,7 @@ class SailsHookFloatperms {
   }
 
   initialize(done) {
-    this.sails.log.debug('[sails-hook-floatperms] Loaded OK!');
+    this.sails.log.debug('[sails-hook-stockade] Loaded OK!');
     return done();
   }
 
@@ -111,13 +111,13 @@ class SailsHookFloatperms {
 
     // if we're missing the middlewareType field or it's not formatted properly, then there's something goofed up about this request, reject..
     if ((typeof action._middlewareType !== 'string') || (!action._middlewareType.startsWith('ACTION:'))) {
-      this.sails.log.warn('[sails-hook-floatperms]', 'Received funky non-action request:', req);
+      this.sails.log.warn('[sails-hook-stockade]', 'Received funky non-action request:', req);
       return res.serverError(RESPONSES.malformedAction);
     }
 
     // ensure we presently have the controller config loaded, otherwise reject..
     if (!this.sails || !this.sails.config || !this.sails.config.blueprints || !this.sails.config.blueprints._controllers) {
-      this.sails.log.error('[sails-hook-floatperms]', 'Failed to locate the `_controllers` field in blueprints config! Ensure you are running Sails v1!');
+      this.sails.log.error('[sails-hook-stockade]', 'Failed to locate the `_controllers` field in blueprints config! Ensure you are running Sails v1!');
       return res.serverError(RESPONSES.badConfig);
     }
 
@@ -139,7 +139,7 @@ class SailsHookFloatperms {
 
     // handle a particular weird case... (this really shouldn't happen unless marlin or sails change/break in some way, but it's better to be safe than sorry...)
     if ((!controller && !marlinController) || (typeof controller !== 'object' && typeof marlinController !== 'object')) {
-      this.sails.log.error('[sails-hook-floatperms]', `Unable to locate controller information for "${fullActionPath}". No such entry exists in the natural or marlin configs. Make sure you've defined a \`_config\` in the target controller!`);
+      this.sails.log.error('[sails-hook-stockade]', `Unable to locate controller information for "${fullActionPath}". No such entry exists in the natural or marlin configs. Make sure you've defined a \`_config\` in the target controller!`);
       return res.serverError(RESPONSES.badConfig);
     }
 
@@ -149,11 +149,11 @@ class SailsHookFloatperms {
 
     // ensure our `permissions` types are proper objects if they have some truthy value (i.e. they'll not be replaced by an object already)
     if (marlinPerms && (typeof marlinPerms !== 'object')) {
-      this.sails.log.error('[sails-hook-floatperms]', `The marlin-configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof marlinPerms}) ${marlinPerms}`);
+      this.sails.log.error('[sails-hook-stockade]', `The marlin-configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof marlinPerms}) ${marlinPerms}`);
       return res.serverError(RESPONSES.badConfig);
     }
     if (naturalPerms && (typeof naturalPerms !== 'object')) {
-      this.sails.log.error('[sails-hook-floatperms]', `The configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof naturalPerms}) ${naturalPerms}`);
+      this.sails.log.error('[sails-hook-stockade]', `The configured \`permissions\` for "${fullActionPath}" are invalid. Expected a proper object but instead found: (${typeof naturalPerms}) ${naturalPerms}`);
       return res.serverError(RESPONSES.badConfig);
     }
 
@@ -164,7 +164,7 @@ class SailsHookFloatperms {
     const matcher = allPerms[actionCaseName];
 
     if (!matcher) {
-      this.sails.log.warn('[sails-hook-floatperms]', `Found no entry for "${actionCaseName}" in the \`permissions\` block of the "${controllerIdent}" controller. The request has been forbidden by default.`);
+      this.sails.log.warn('[sails-hook-stockade]', `Found no entry for "${actionCaseName}" in the \`permissions\` block of the "${controllerIdent}" controller. The request has been forbidden by default.`);
       return res.forbidden(RESPONSES.badConfig);
     }
 
@@ -173,9 +173,9 @@ class SailsHookFloatperms {
         if (!validationRes.hasPassed) {
           // if we've some errors, log them...
           if (validationRes.thrownErrors.length > 0) {
-            this.sails.log.error('[sails-hook-floatperms]', 'Errors were thrown during request validation:');
+            this.sails.log.error('[sails-hook-stockade]', 'Errors were thrown during request validation:');
             validationRes.thrownErrors.forEach((e, i) => {
-              this.sails.log.error('[sails-hook-floatperms]', `#${i + 1})`, e);
+              this.sails.log.error('[sails-hook-stockade]', `#${i + 1})`, e);
             });
           }
           return res.forbidden(this._collectFails(validationRes.failedValidations));
@@ -189,19 +189,19 @@ class SailsHookFloatperms {
             if (global.ErrorService) {
               return;
             }
-            return this.sails.log.error('[sails-hook-floatperms]', `Error executing action "${fullActionPath}":`, e);
+            return this.sails.log.error('[sails-hook-stockade]', `Error executing action "${fullActionPath}":`, e);
           });
         } catch (e) {
           if (!res.headersSent) {
             res.serverError(e);
           }
-          return this.sails.log.error('[sails-hook-floatperms]', `Error executing action "${fullActionPath}":`, e);
+          return this.sails.log.error('[sails-hook-stockade]', `Error executing action "${fullActionPath}":`, e);
         }
       }).catch(err => {
         throw err;
       });
     } catch (err) {
-      this.sails.log.error('[sails-hook-floatperms]', 'Error occurred during request validation:', err);
+      this.sails.log.error('[sails-hook-stockade]', 'Error occurred during request validation:', err);
       return res.serverError(err);
     }
   }
@@ -214,7 +214,7 @@ class SailsHookFloatperms {
  * objects will be wrapped up as such, and grouped if there are more than one.
  *
  * @param {Object[]} failedValidations - A list of failed validations as received from
- * Floatperms.
+ * Stockade.
  */
   _collectFails(failedValidations) {
     if (!Array.isArray(failedValidations)) {
@@ -262,12 +262,12 @@ class SailsHookFloatperms {
       },
     };
 
-    // Pull out our Floatperms configuration object.
-    const floatpermsConfig = this.sails.config && this.sails.config.floatperms;
+    // Pull out our Stockade configuration object.
+    const stockadeConfig = this.sails.config && this.sails.config.stockade;
     // Extract just our explanations, as that's all we're really interested in wrapping.
     const explanations = failedValidations.filter(v => v.explanation).map(v => v.explanation);
     // Find our wrap function to use, if any.
-    const wrap = errorWrappers[floatpermsConfig.wrapErrors];
+    const wrap = errorWrappers[stockadeConfig.wrapErrors];
     // Wrap all explanations, or if there is no wrapper, simply use them as-is.
     const errors = wrap ? wrap(explanations) : explanations;
 
@@ -292,7 +292,7 @@ function declassify(inst) {
   return inst;
 }
 
-module.exports = (sails) => declassify(new SailsHookFloatperms(sails));
+module.exports = (sails) => declassify(new SailsHookStockade(sails));
 module.exports.Permissions = Permissions;
 module.exports.loadProviders = (pathName) => {
   const entries = fs.readdirSync(pathName);
