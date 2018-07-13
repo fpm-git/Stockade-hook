@@ -14,7 +14,7 @@
   "author": "Floatplane Media Inc.",
   "sails": {
     "isHook": true,
-    "hookName": "stockade-hook"
+    "hookName": "stockade"
   },
   "dependencies": {
     "stockade": "^1.0.0"
