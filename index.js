@@ -1,5 +1,6 @@
 
 // Classes and fat modules.
+const Joi = require('joi');
 const Permissions = require('stockade');
 const SailsHookStockade = require('./lib/hook');
 
@@ -12,5 +13,6 @@ const declassify = require('./lib/helper/declassify');
 // `declassify` helper to further appease Sails).
 // Additional fields are attached to expose helper functions or classes.
 module.exports = (sails) => declassify(new SailsHookStockade(sails));
+module.exports.Joi = Joi;
 module.exports.Permissions = Permissions;
 module.exports.loadProviders = loadProviders;
