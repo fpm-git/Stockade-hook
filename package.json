@@ -6,17 +6,26 @@
     "npm": ">=3.10.8"
   },
   "description": "Extends sails with a modular permissions system for guarding controller actions in a cleaner way than policies. Uses the `Stockade` module as a singleton permissions store and general helper library.",
-  "license": "",
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter spec"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fpm-git/stockade-hook.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fpm-git/stockade-hook/issues"
+  },
+  "homepage": "https://github.com/fpm-git/stockade-hook#readme",
   "author": "Floatplane Media Inc.",
   "sails": {
     "isHook": true,
     "hookName": "stockade"
   },
   "dependencies": {
+    "joi": "^14.3.1",
     "stockade": "^1.0.0"
   }
 }
