@@ -25,7 +25,7 @@
     "hookName": "stockade"
   },
   "dependencies": {
-    "joi": "^14.3.1",
+    "joi": "^17.9.2",
     "stockade": "^1.0.0"
   }
 }
